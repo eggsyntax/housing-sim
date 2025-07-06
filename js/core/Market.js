@@ -1,4 +1,12 @@
+/**
+ * Manages the housing market simulation including people, houses, and auctions.
+ * Handles market initialization, turnover, and auction processes.
+ */
 class Market {
+    /**
+     * Creates a new Market instance.
+     * @param {Config} config - Configuration object containing market parameters
+     */
     constructor(config) {
         this.config = config;
         this.people = [];
@@ -16,6 +24,9 @@ class Market {
         this.initialize();
     }
 
+    /**
+     * Initializes the market with houses and people, then sets up initial occupancy.
+     */
     initialize() {
         console.log('=== Initializing Market ===');
         
@@ -54,6 +65,9 @@ class Market {
         this.logWealthDistribution();
     }
 
+    /**
+     * Sets up initial 80% occupancy by matching people to houses based on wealth.
+     */
     initializeOccupancy() {
         // Determine how many houses to initially occupy (80%)
         const numHousesToOccupy = Math.floor(this.houses.length * 0.8);
@@ -79,6 +93,9 @@ class Market {
         }
     }
 
+    /**
+     * Processes one simulation tick: ages houses, processes exits/entries, and conducts auctions.
+     */
     tick() {
         this.tickCount++;
         console.log(`\n${'='.repeat(50)}`);

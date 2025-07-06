@@ -92,12 +92,12 @@ describe('House Class', () => {
             assert.strictEqual(house.yearsSinceOwnership, 3);
         });
 
-        it('should not increment when not owned', () => {
+        it('should increment even when not owned', () => {
             house.owner = null; // Ensure no owner
             house.yearsSinceOwnership = 2;
             
             house.incrementOwnershipYears();
-            assert.strictEqual(house.yearsSinceOwnership, 2);
+            assert.strictEqual(house.yearsSinceOwnership, 3);
         });
     });
 

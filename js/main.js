@@ -44,7 +44,6 @@ class Simulation {
                 <button id="startBtn">Start</button>
                 <button id="pauseBtn" disabled>Pause</button>
                 <button id="stepBtn">Step</button>
-                <button id="stopBtn" disabled>Stop</button>
                 <button id="resetBtn">Reset</button>
                 <div>
                     <label for="speedSlider">Speed (ms): </label>
@@ -57,7 +56,6 @@ class Simulation {
             document.getElementById('startBtn').addEventListener('click', () => this.start());
             document.getElementById('pauseBtn').addEventListener('click', () => this.pause());
             document.getElementById('stepBtn').addEventListener('click', () => this.step());
-            document.getElementById('stopBtn').addEventListener('click', () => this.stop());
             document.getElementById('resetBtn').addEventListener('click', () => this.reset());
             
             const speedSlider = document.getElementById('speedSlider');
@@ -156,24 +154,20 @@ class Simulation {
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
         const stepBtn = document.getElementById('stepBtn');
-        const stopBtn = document.getElementById('stopBtn');
         
-        if (startBtn && pauseBtn && stepBtn && stopBtn) {
+        if (startBtn && pauseBtn && stepBtn) {
             if (this.isRunning && !this.isPaused) {
                 startBtn.disabled = true;
                 pauseBtn.disabled = false;
                 stepBtn.disabled = true;
-                stopBtn.disabled = false;
             } else if (this.isRunning && this.isPaused) {
                 startBtn.disabled = false;
                 pauseBtn.disabled = true;
                 stepBtn.disabled = false;
-                stopBtn.disabled = false;
             } else {
                 startBtn.disabled = false;
                 pauseBtn.disabled = true;
                 stepBtn.disabled = false;
-                stopBtn.disabled = true;
             }
         }
     }

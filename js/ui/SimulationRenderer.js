@@ -1,4 +1,14 @@
+/**
+ * Handles rendering of the housing market simulation on HTML5 Canvas.
+ * Provides visual representation of houses, people, market stats, and interactive tooltips.
+ */
 class SimulationRenderer {
+    /**
+     * Creates a new SimulationRenderer instance.
+     * @param {HTMLCanvasElement} canvasElement - Canvas element for rendering
+     * @param {HTMLElement} consoleElement - Console element (deprecated, pass null)
+     * @param {HTMLElement} analyticsContainer - Container for market statistics
+     */
     constructor(canvasElement, consoleElement, analyticsContainer) {
         this.canvas = canvasElement;
         this.ctx = canvasElement.getContext('2d');
@@ -35,9 +45,12 @@ class SimulationRenderer {
         // Setup canvas
         this.setupCanvas();
         
-        // Note: Console capture removed to reduce clutter
+        // Console output is handled separately through browser console
     }
 
+    /**
+     * Configures canvas dimensions and rendering settings.
+     */
     setupCanvas() {
         // Calculate canvas size based on grid and house size
         const canvasWidth = this.gridCols * (this.houseSize + this.margin) + this.margin + 200; // Extra space for homeless area
@@ -50,17 +63,20 @@ class SimulationRenderer {
         this.canvas.style.maxWidth = '100%';
         this.canvas.style.height = 'auto';
         
-        // Improve text rendering quality
+        // Configure text rendering quality
         this.ctx.imageSmoothingEnabled = false; // For crisp pixel-perfect rendering
         this.ctx.textRenderingOptimization = 'optimizeQuality';
         
-        // Setup font with better rendering
+        // Setup default font
         this.ctx.font = 'bold 11px Arial';
         this.ctx.textAlign = 'center';
         this.ctx.textBaseline = 'middle';
     }
 
-    // Console capture methods removed - users can check browser console directly
+    /**
+     * Renders the complete market visualization including houses, people, and stats.
+     * @param {Market} market - The market instance to render
+     */
 
     renderMarket(market) {
         // Clear canvas
@@ -91,15 +107,14 @@ class SimulationRenderer {
         }
     }
 
+    /**
+     * Renders all houses in the grid layout.
+     * @param {Array} houses - Array of house instances to render
+     */
     renderHouses(houses) {
         houses.forEach((house, index) => {
-            const row = Math.floor(index / this.gridCols);
-            const col = index % this.gridCols;
-            
-            const x = col * (this.houseSize + this.margin) + this.margin;
-            const y = row * (this.houseSize + this.margin) + this.margin + 40; // Offset for title
-            
-            this.renderHouse(house, x, y);
+            const position = this.getHousePosition(index);
+            this.renderHouse(house, position.x, position.y);
         });
     }
 
@@ -118,12 +133,12 @@ class SimulationRenderer {
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(x, y, this.houseSize, this.houseSize);
         
-        // Draw house ID with better contrast
+        // Draw house ID
         this.ctx.fillStyle = this.colors.text;
         this.ctx.font = 'bold 11px Arial';
         this.ctx.textAlign = 'center';
         
-        // Add text shadow for better readability
+        // Add text shadow for readability
         this.ctx.shadowColor = 'rgba(255, 255, 255, 0.8)';
         this.ctx.shadowBlur = 1;
         this.ctx.shadowOffsetX = 1;
@@ -165,21 +180,21 @@ class SimulationRenderer {
         });
     }
 
+    /**
+     * Renders a person inside their house.
+     * @param {Person} person - The person to render
+     */
     renderPersonInHouse(person) {
         const house = person.house;
         const houseIndex = this.getHouseIndex(house);
         
         if (houseIndex === -1) return;
         
-        const row = Math.floor(houseIndex / this.gridCols);
-        const col = houseIndex % this.gridCols;
-        
-        const houseX = col * (this.houseSize + this.margin) + this.margin;
-        const houseY = row * (this.houseSize + this.margin) + this.margin + 40;
+        const housePosition = this.getHousePosition(houseIndex);
         
         // Draw person as a circle in the house
-        const personX = houseX + this.houseSize - this.personSize - 3;
-        const personY = houseY + 3;
+        const personX = housePosition.x + this.houseSize - this.personSize - 3;
+        const personY = housePosition.y + 3;
         
         this.ctx.fillStyle = this.colors.person;
         this.ctx.beginPath();
@@ -482,19 +497,37 @@ class SimulationRenderer {
         }
     }
 
+    /**
+     * Calculates the screen position for a house at the given grid index.
+     * @param {number} index - Grid index of the house
+     * @returns {Object} Object with x and y coordinates
+     */
+    getHousePosition(index) {
+        const row = Math.floor(index / this.gridCols);
+        const col = index % this.gridCols;
+        
+        return {
+            x: col * (this.houseSize + this.margin) + this.margin,
+            y: row * (this.houseSize + this.margin) + this.margin + 40
+        };
+    }
+
+    /**
+     * Finds the house at the given screen coordinates.
+     * @param {number} x - Screen x coordinate
+     * @param {number} y - Screen y coordinate
+     * @param {Market} market - Market instance containing houses
+     * @returns {House|null} The house at the position, or null if none found
+     */
     getHouseAtPosition(x, y, market) {
         if (!market || !market.houses) return null;
         
         // Check each house position
         for (let index = 0; index < market.houses.length; index++) {
-            const row = Math.floor(index / this.gridCols);
-            const col = index % this.gridCols;
+            const position = this.getHousePosition(index);
             
-            const houseX = col * (this.houseSize + this.margin) + this.margin;
-            const houseY = row * (this.houseSize + this.margin) + this.margin + 40;
-            
-            if (x >= houseX && x <= houseX + this.houseSize &&
-                y >= houseY && y <= houseY + this.houseSize) {
+            if (x >= position.x && x <= position.x + this.houseSize &&
+                y >= position.y && y <= position.y + this.houseSize) {
                 return market.houses[index];
             }
         }
@@ -502,6 +535,27 @@ class SimulationRenderer {
         return null;
     }
 
+    /**
+     * Calculates optimal tooltip position to stay within canvas bounds.
+     * @param {number} x - Mouse x coordinate
+     * @param {number} y - Mouse y coordinate
+     * @param {number} width - Tooltip width
+     * @param {number} height - Tooltip height
+     * @returns {Object} Object with x and y coordinates for tooltip
+     */
+    calculateTooltipPosition(x, y, width, height) {
+        return {
+            x: Math.min(x + 10, this.canvas.width - width - 10),
+            y: Math.max(y - height - 10, 10)
+        };
+    }
+
+    /**
+     * Renders a tooltip for the given house at the specified coordinates.
+     * @param {number} x - Mouse x coordinate
+     * @param {number} y - Mouse y coordinate
+     * @param {House} house - House to display information for
+     */
     renderTooltip(x, y, house) {
         if (!house) return;
         
@@ -511,8 +565,9 @@ class SimulationRenderer {
         const isOccupied = info.ownerId;
         const tooltipWidth = 220;
         const tooltipHeight = isOccupied ? 120 : 100;
-        const tooltipX = Math.min(x + 10, this.canvas.width - tooltipWidth - 10);
-        const tooltipY = Math.max(y - tooltipHeight - 10, 10);
+        const position = this.calculateTooltipPosition(x, y, tooltipWidth, tooltipHeight);
+        const tooltipX = position.x;
+        const tooltipY = position.y;
         
         // Draw tooltip background with border
         this.ctx.fillStyle = 'rgba(0, 0, 0, 0.9)';

@@ -1,6 +1,15 @@
+/**
+ * Represents a house in the housing market simulation.
+ * Houses have intrinsic value, market pricing, and ownership state.
+ */
 class House {
     static idCounter = 0;
 
+    /**
+     * Creates a new House instance.
+     * @param {number} intrinsicValue - The house's intrinsic value
+     * @param {number} initialPrice - The house's initial market price
+     */
     constructor(intrinsicValue, initialPrice) {
         this.id = `house_${++House.idCounter}`;
         this.intrinsicValue = intrinsicValue;
@@ -9,26 +18,46 @@ class House {
         this.yearsSinceOwnership = 0;
     }
 
+    /**
+     * Calculates the current value as a weighted average of intrinsic value and market price.
+     * @param {number} valueIntrinsicness - Weight for intrinsic value (0-1, default 0.7)
+     * @returns {number} The calculated house value
+     */
     calculateValue(valueIntrinsicness = 0.7) {
         // Hybrid value: weighted average of intrinsic value and market price
         return valueIntrinsicness * this.intrinsicValue + 
                (1 - valueIntrinsicness) * this.lastSellingPrice;
     }
 
+    /**
+     * Checks if the house is available for purchase.
+     * @returns {boolean} True if the house has no owner
+     */
     isAvailable() {
         return this.owner === null;
     }
 
+    /**
+     * Sets the house's owner and resets ownership years.
+     * @param {Person} person - The new owner
+     */
     setOwner(person) {
         this.owner = person;
         this.yearsSinceOwnership = 0;
     }
 
+    /**
+     * Increments the years since ownership change (used for color state transitions).
+     */
     incrementOwnershipYears() {
         // Always increment years since ownership change (whether owned or not)
         this.yearsSinceOwnership++;
     }
 
+    /**
+     * Determines the visual state for rendering colors.
+     * @returns {string} Color state: 'available', 'just-available', 'occupied', or 'just-occupied'
+     */
     getColorState() {
         if (this.isAvailable()) {
             return this.yearsSinceOwnership === 0 ? 'just-available' : 'available';
@@ -37,6 +66,10 @@ class House {
         }
     }
 
+    /**
+     * Returns display information for UI rendering.
+     * @returns {Object} Object containing formatted house data
+     */
     getDisplayInfo() {
         return {
             id: this.id,
