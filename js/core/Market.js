@@ -231,59 +231,100 @@ class Market {
         console.log(`\n--- Conducting ${nAuctionSteps} Auction Batch${nAuctionSteps > 1 ? 'es' : ''} ---`);
         console.log(`Available houses: ${this.availableHouses.length}`);
         
-        let allAuctionResults = [];
-        let totalReport = {
-            successfulSales: 0,
-            totalHouses: 0,
-            totalRevenue: 0,
-            averagePrice: 0
-        };
-        
-        // Divide houses into batches
+        const auctionSummary = this.initializeAuctionSummary();
         const housesPerBatch = Math.max(1, Math.ceil(this.availableHouses.length / nAuctionSteps));
         
         for (let batchNum = 0; batchNum < nAuctionSteps && this.availableHouses.length > 0; batchNum++) {
-            console.log(`\n=== Auction Batch ${batchNum + 1}/${nAuctionSteps} ===`);
-            
-            // Select houses for this batch
-            const batchHouses = this.availableHouses.slice(0, housesPerBatch);
-            
-            if (batchHouses.length === 0) break;
-            
-            console.log(`Auctioning ${batchHouses.length} house${batchHouses.length > 1 ? 's' : ''}`);
-            
-            // Conduct auction for this batch
-            const auction = new this.Auction(batchHouses, this.people);
-            const results = auction.conductVickreyAuction(
-                this.config.get('value_intrinsicness'),
-                this.config.get('upgrade_threshold')
-            );
-            
-            auction.executeTransactions();
-            allAuctionResults.push(...results);
-            
-            // Remove sold houses from available list
-            const soldHouses = auction.getSuccessfulSales().map(result => result.house);
-            this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
-            
-            // Accumulate batch statistics
-            const batchReport = auction.generateReport();
-            totalReport.successfulSales += batchReport.successfulSales;
-            totalReport.totalHouses += batchReport.totalHouses;
-            totalReport.totalRevenue += batchReport.totalRevenue;
-            
-            console.log(`Batch ${batchNum + 1} results: ${batchReport.successfulSales}/${batchReport.totalHouses} houses sold`);
-            
-            // Brief pause between batches (simulates time delay)
-            if (batchNum < nAuctionSteps - 1 && this.availableHouses.length > 0) {
-                console.log(`--- Brief delay before next batch ---`);
-            }
+            this.conductSingleAuctionBatch(batchNum + 1, nAuctionSteps, housesPerBatch, auctionSummary);
         }
         
+        this.finalizeAuctions(auctionSummary);
+    }
+
+    /**
+     * Initializes the auction summary object for tracking results across batches.
+     * @returns {Object} Empty auction summary object
+     */
+    initializeAuctionSummary() {
+        return {
+            allResults: [],
+            totalReport: {
+                successfulSales: 0,
+                totalHouses: 0,
+                totalRevenue: 0,
+                averagePrice: 0
+            }
+        };
+    }
+
+    /**
+     * Conducts a single auction batch.
+     * @param {number} batchNumber - Current batch number (1-indexed)
+     * @param {number} totalBatches - Total number of batches
+     * @param {number} housesPerBatch - Number of houses per batch
+     * @param {Object} auctionSummary - Summary object to accumulate results
+     */
+    conductSingleAuctionBatch(batchNumber, totalBatches, housesPerBatch, auctionSummary) {
+        console.log(`\n=== Auction Batch ${batchNumber}/${totalBatches} ===`);
+        
+        const batchHouses = this.availableHouses.slice(0, housesPerBatch);
+        if (batchHouses.length === 0) return;
+        
+        console.log(`Auctioning ${batchHouses.length} house${batchHouses.length > 1 ? 's' : ''}`);
+        
+        // Conduct auction for this batch
+        const auction = new this.Auction(batchHouses, this.people);
+        const results = auction.conductVickreyAuction(
+            this.config.get('value_intrinsicness'),
+            this.config.get('upgrade_threshold')
+        );
+        
+        auction.executeTransactions();
+        auctionSummary.allResults.push(...results);
+        
+        // Update available houses and accumulate statistics
+        this.updateAvailableHousesAfterAuction(auction);
+        this.accumulateBatchStatistics(auction, auctionSummary.totalReport);
+        
+        console.log(`Batch ${batchNumber} results: ${auction.generateReport().successfulSales}/${auction.generateReport().totalHouses} houses sold`);
+        
+        // Brief pause between batches (simulates time delay)
+        if (batchNumber < totalBatches && this.availableHouses.length > 0) {
+            console.log(`--- Brief delay before next batch ---`);
+        }
+    }
+
+    /**
+     * Updates the available houses list after an auction by removing sold houses.
+     * @param {Auction} auction - The auction that was conducted
+     */
+    updateAvailableHousesAfterAuction(auction) {
+        const soldHouses = auction.getSuccessfulSales().map(result => result.house);
+        this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
+    }
+
+    /**
+     * Accumulates batch statistics into the total report.
+     * @param {Auction} auction - The auction that was conducted
+     * @param {Object} totalReport - Total report object to update
+     */
+    accumulateBatchStatistics(auction, totalReport) {
+        const batchReport = auction.generateReport();
+        totalReport.successfulSales += batchReport.successfulSales;
+        totalReport.totalHouses += batchReport.totalHouses;
+        totalReport.totalRevenue += batchReport.totalRevenue;
+    }
+
+    /**
+     * Finalizes auction results and displays summary.
+     * @param {Object} auctionSummary - Complete auction summary
+     */
+    finalizeAuctions(auctionSummary) {
         // Store all auction results for visualization
-        this.lastAuctionResults = allAuctionResults;
+        this.lastAuctionResults = auctionSummary.allResults;
         
         // Calculate overall statistics
+        const { totalReport } = auctionSummary;
         totalReport.averagePrice = totalReport.successfulSales > 0 
             ? totalReport.totalRevenue / totalReport.successfulSales 
             : 0;

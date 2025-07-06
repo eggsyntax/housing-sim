@@ -42,6 +42,13 @@ This simulation models a discrete-time housing market where:
 - **Enhanced Tooltips**: Hover over houses for detailed information
 - **Rich Statistics**: Live market metrics including Gini coefficient and wealth concentration
 
+### Analytics Features
+- **Historical Data Tracking**: Complete time-series data for all market metrics
+- **Dual-Chart System**: Separate views for percentage metrics (0-100% fixed scale) and financial metrics
+- **Market Trend Analysis**: Housing rates, occupancy rates, wealth inequality over time
+- **Fixed Scaling**: Percentage charts use consistent 0-100% Y-axis for accurate trend comparison
+- **Data Export**: Historical data can be exported for external analysis
+
 ## Core Parameters
 
 ### Population & Market Size
@@ -118,11 +125,16 @@ This simulation is designed to explore:
 
 ## Controls
 
+### Simulation Controls
 - **Start**: Begin or resume the simulation
 - **Pause**: Temporarily halt the simulation (can be resumed)
 - **Step**: Advance exactly one tick
 - **Reset**: Return to initial state with new random seed
 - **Speed Slider**: Adjust time between ticks (100ms - 3000ms)
+
+### View Controls
+- **Market View**: Display interactive house grid with tooltips and real-time market activity
+- **Analytics View**: Show historical charts with percentage trends and financial metrics
 
 ## Technical Details
 
@@ -143,13 +155,17 @@ This simulation is designed to explore:
 │   │   ├── Market.js      # Market management
 │   │   ├── Person.js      # Person behavior
 │   │   ├── House.js       # House properties
-│   │   └── Auction.js     # Auction mechanics
+│   │   ├── Auction.js     # Auction mechanics
+│   │   └── AnalyticsHistory.js # Time-series data tracking
 │   ├── ui/                # User interface
-│   │   └── SimulationRenderer.js
+│   │   └── SimulationRenderer.js # Canvas rendering & analytics views
 │   └── utils/             # Utilities
 │       ├── Config.js      # Configuration management
-│       └── MathUtils.js   # Mathematical utilities
+│       ├── MathUtils.js   # Mathematical utilities
+│       └── ChartRenderer.js # Chart visualization
 └── tests/                 # Test suite
+    ├── unit/              # Unit tests
+    └── integration/       # Integration tests
 ```
 
 ## Development

@@ -1,4 +1,12 @@
+/**
+ * Main simulation controller that orchestrates the housing market simulation.
+ * Manages the market, renderer, user interface controls, and simulation timing.
+ */
 class Simulation {
+    /**
+     * Creates a new Simulation instance.
+     * @param {Object} userConfig - Optional configuration overrides
+     */
     constructor(userConfig = {}) {
         this.config = new Config(userConfig);
         this.market = null;
@@ -10,6 +18,9 @@ class Simulation {
         this.initialize();
     }
 
+    /**
+     * Initializes the simulation by creating market, renderer, and UI controls.
+     */
     initialize() {
         console.log('=== Housing Market Simulation ===');
         console.log('Configuration:', this.config.getAll());
@@ -25,6 +36,9 @@ class Simulation {
         this.updateDisplay();
     }
 
+    /**
+     * Sets up the simulation renderer with canvas and statistics display.
+     */
     setupRenderer() {
         const canvas = document.getElementById('market-canvas');
         const statsDiv = document.getElementById('stats');
@@ -36,6 +50,9 @@ class Simulation {
         }
     }
 
+    /**
+     * Sets up user interface controls for simulation management and view switching.
+     */
     setupControls() {
         // Add control buttons to the page
         const controlsDiv = document.getElementById('controls');
@@ -100,12 +117,19 @@ class Simulation {
         }
     }
 
+    /**
+     * Sets the current view mode (market or analytics).
+     * @param {string} mode - The view mode ('market' or 'analytics')
+     */
     setViewMode(mode) {
         if (this.renderer) {
             this.renderer.setViewMode(mode);
         }
     }
 
+    /**
+     * Starts the simulation with automatic progression.
+     */
     start() {
         if (this.isRunning && !this.isPaused) return;
         
@@ -121,6 +145,9 @@ class Simulation {
         this.updateControls();
     }
 
+    /**
+     * Pauses the automatic simulation progression.
+     */
     pause() {
         if (!this.isRunning || this.isPaused) return;
         
@@ -131,6 +158,9 @@ class Simulation {
         this.updateControls();
     }
 
+    /**
+     * Resumes the simulation from a paused state.
+     */
     resume() {
         if (!this.isRunning || !this.isPaused) return;
         
@@ -143,6 +173,9 @@ class Simulation {
         this.updateControls();
     }
 
+    /**
+     * Advances the simulation by exactly one tick/year.
+     */
     step() {
         if (!this.market) return;
         
@@ -152,6 +185,9 @@ class Simulation {
         this.updateDisplay();
     }
 
+    /**
+     * Stops the simulation completely.
+     */
     stop() {
         this.isRunning = false;
         this.isPaused = false;
@@ -165,6 +201,9 @@ class Simulation {
         this.updateControls();
     }
 
+    /**
+     * Resets the simulation to initial conditions with a new random seed.
+     */
     reset() {
         this.stop();
         console.clear();
@@ -183,6 +222,9 @@ class Simulation {
         console.log('Simulation reset');
     }
 
+    /**
+     * Updates the state of UI control buttons based on simulation status.
+     */
     updateControls() {
         const startBtn = document.getElementById('startBtn');
         const pauseBtn = document.getElementById('pauseBtn');
@@ -205,6 +247,9 @@ class Simulation {
         }
     }
 
+    /**
+     * Updates the visual display including market visualization and statistics.
+     */
     updateDisplay() {
         if (this.renderer && this.market) {
             // Render the market visualization
