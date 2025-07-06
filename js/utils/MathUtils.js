@@ -33,7 +33,8 @@ class MathUtils {
     }
 
     static generateGaussian(mean, std) {
-        return Math.max(this.generateNormal(mean, std), 0);
+        // Ensure non-negative values for prices
+        return Math.max(this.generateNormal(mean, std), mean * 0.1);
     }
 
     static shuffleArray(array) {

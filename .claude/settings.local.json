@@ -5,7 +5,8 @@
       "Bash(node test_mvp.js)",
       "Bash(open index.html)",
       "Bash(chmod:*)",
-      "Bash(node:*)"
+      "Bash(node:*)",
+      "Bash(python3:*)"
     ],
     "deny": []
   }

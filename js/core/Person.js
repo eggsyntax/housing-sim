@@ -34,6 +34,7 @@ class Person {
         if (this.house) {
             const house = this.house;
             this.house.owner = null;
+            house.yearsSinceOwnership = 0; // Reset to mark as "just-available"
             this.house = null;
             return house;
         }

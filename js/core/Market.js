@@ -44,10 +44,39 @@ class Market {
         }
 
         console.log(`Created ${this.houses.length} houses and ${this.people.length} people`);
-        console.log(`Available houses: ${this.availableHouses.length}`);
+        
+        // Initialize with 80% occupancy - match people to houses by wealth
+        this.initializeOccupancy();
+        
+        console.log(`After initial occupancy - Available houses: ${this.availableHouses.length}`);
         
         // Show initial wealth distribution
         this.logWealthDistribution();
+    }
+
+    initializeOccupancy() {
+        // Determine how many houses to initially occupy (80%)
+        const numHousesToOccupy = Math.floor(this.houses.length * 0.8);
+        
+        // Sort houses by value (ascending) and people by wealth (ascending)
+        const sortedHouses = [...this.houses].sort((a, b) => a.calculateValue() - b.calculateValue());
+        const sortedPeople = [...this.people].sort((a, b) => a.wealth - b.wealth);
+        
+        console.log(`\n--- Initial Occupancy (${numHousesToOccupy}/${this.houses.length} houses) ---`);
+        
+        // Match people to houses based on closest wealth-to-value ratio
+        for (let i = 0; i < numHousesToOccupy && i < sortedPeople.length; i++) {
+            const house = sortedHouses[i];
+            const person = sortedPeople[i];
+            
+            // Set up the ownership
+            person.buyHouse(house, house.calculateValue());
+            
+            // Remove from available houses
+            this.availableHouses = this.availableHouses.filter(h => h !== house);
+            
+            console.log(`  ${person.id} (wealth: ${this.MathUtils.formatCurrency(person.wealth)}) -> ${house.id} (value: ${this.MathUtils.formatCurrency(house.calculateValue())})`);
+        }
     }
 
     tick() {
@@ -79,16 +108,20 @@ class Market {
         const turnoverOut = this.config.get('turnover_out');
         if (turnoverOut === 0) return;
         
-        const housedPeople = this.people.filter(person => person.house !== null);
-        const exitingPeople = this.MathUtils.selectRandomElements(housedPeople, turnoverOut);
+        // Select random people to exit from ALL people, not just housed ones
+        const exitingPeople = this.MathUtils.selectRandomElements(this.people, turnoverOut);
         
         if (exitingPeople.length > 0) {
             console.log(`\n--- People Exiting Market ---`);
             exitingPeople.forEach(person => {
-                console.log(`${person.id} exits, selling ${person.house.id}`);
-                const house = person.sellHouse();
-                if (house) {
-                    this.availableHouses.push(house);
+                if (person.house) {
+                    console.log(`${person.id} exits, selling ${person.house.id}`);
+                    const house = person.sellHouse();
+                    if (house) {
+                        this.availableHouses.push(house);
+                    }
+                } else {
+                    console.log(`${person.id} exits (was unhoused)`);
                 }
             });
             
@@ -131,6 +164,9 @@ class Market {
         );
         
         auction.executeTransactions();
+        
+        // Store auction results for visualization
+        this.lastAuctionResults = results;
         
         // Remove sold houses from available list
         const soldHouses = auction.getSuccessfulSales().map(result => result.house);

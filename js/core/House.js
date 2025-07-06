@@ -25,9 +25,8 @@ class House {
     }
 
     incrementOwnershipYears() {
-        if (this.owner) {
-            this.yearsSinceOwnership++;
-        }
+        // Always increment years since ownership change (whether owned or not)
+        this.yearsSinceOwnership++;
     }
 
     getColorState() {

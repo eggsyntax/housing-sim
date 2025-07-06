@@ -2,6 +2,7 @@ class Simulation {
     constructor(userConfig = {}) {
         this.config = new Config(userConfig);
         this.market = null;
+        this.renderer = null;
         this.isRunning = false;
         this.isPaused = false;
         this.intervalId = null;
@@ -15,7 +16,24 @@ class Simulation {
         
         this.market = new Market(this.config);
         
+        // Initialize renderer
+        this.setupRenderer();
+        
         this.setupControls();
+        
+        // Initial render
+        this.updateDisplay();
+    }
+
+    setupRenderer() {
+        const canvas = document.getElementById('market-canvas');
+        const statsDiv = document.getElementById('stats');
+        
+        if (canvas) {
+            this.renderer = new SimulationRenderer(canvas, null, statsDiv);
+            this.renderer.setMarket(this.market);
+            this.renderer.setupMouseInteraction(this.market);
+        }
     }
 
     setupControls() {
@@ -99,8 +117,8 @@ class Simulation {
         
         this.market.tick();
         
-        // Update stats display
-        this.updateStats();
+        // Update display
+        this.updateDisplay();
     }
 
     stop() {
@@ -125,7 +143,11 @@ class Simulation {
         House.idCounter = 0;
         
         this.market = new Market(this.config);
-        this.updateStats();
+        if (this.renderer) {
+            this.renderer.setMarket(this.market);
+            this.renderer.setupMouseInteraction(this.market);
+        }
+        this.updateDisplay();
         
         console.log('Simulation reset');
     }
@@ -156,19 +178,18 @@ class Simulation {
         }
     }
 
-    updateStats() {
-        const statsDiv = document.getElementById('stats');
-        if (statsDiv && this.market) {
-            const stats = this.market.getMarketStats();
-            statsDiv.innerHTML = `
-                <h3>Market Statistics</h3>
-                <div>Year: ${stats.currentYear}</div>
-                <div>Tick: ${stats.tickCount}</div>
-                <div>People: ${stats.totalPeople} (${stats.housedPeople} housed, ${stats.houselessPeople} homeless)</div>
-                <div>Houses: ${stats.occupiedHouses}/${stats.totalHouses} occupied, ${stats.availableHouses} available</div>
-                <div>Average Wealth: ${MathUtils.formatCurrency(stats.averageWealth)}</div>
-                <div>Average House Value: ${MathUtils.formatCurrency(stats.averageHouseValue)}</div>
-            `;
+    updateDisplay() {
+        if (this.renderer && this.market) {
+            // Render the market visualization
+            this.renderer.renderMarket(this.market);
+            
+            // Add auction feedback if available
+            if (this.market.lastAuctionResults) {
+                this.renderer.renderAuctionFeedback(this.market.lastAuctionResults);
+            }
+            
+            // Update statistics
+            this.renderer.updateStats(this.market);
         }
     }
 

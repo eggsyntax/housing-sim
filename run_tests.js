@@ -10,7 +10,8 @@ const tests = [
     'tests/unit/person.test.js',
     'tests/unit/house.test.js', 
     'tests/unit/auction.test.js',
-    'tests/integration/market.test.js'
+    'tests/integration/market.test.js',
+    'tests/integration/long_term_market.test.js'
 ];
 
 let totalTests = 0;

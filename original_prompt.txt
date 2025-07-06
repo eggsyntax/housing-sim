@@ -13,6 +13,14 @@ Here's the setup I'm imagining:
 * The graphic simulation should show the houses on screen, with each house showing a) its value; b) its most recent selling price; c) the wealth of its owner; d) how long it's been occupied by the current owner. During bidding, we should be able to see the price as it goes up. 
 * I want to be able to run scenarios in which certain things happen. In particular, I want to be able to simulate one scenario in which a substantial number of people with high wealth decide to 'downsize' by selling their current house and buying a much lower-value house, to see how that affects the overall market.
 
+NOTE: parameters renamed to:
+  - h → num_houses
+  - p → num_people
+  - wm, wd → wealth_mean, wealth_std
+  - hm, hd → house_price_mean, house_price_std
+  - t_i, t_o → turnover_in, turnover_out
+  - x → price_influence_factor
+  - m → upgrade_threshold
 
 I'm not an economist or housing specialist! If you see problems with how I'm modeling the system, or ways in which it's fundamentally unrealistic (other than just its simplicity), please let me know and we'll discuss them!
 

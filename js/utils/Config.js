@@ -5,12 +5,12 @@ class Config {
         num_people: 10,
         
         // Wealth Distribution
-        wealth_mean: 500000,
-        wealth_std: 300000,
+        wealth_mean: 400000,  // Reduced to better match house prices
+        wealth_std: 200000,   // Reduced for better affordability
         
         // Housing
-        house_price_mean: 400000,
-        house_price_std: 250000,
+        house_price_mean: 300000,  // Reduced to be more affordable
+        house_price_std: 150000,   // Reduced spread
         value_intrinsicness: 0.7,
         
         // Market Dynamics

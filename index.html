@@ -27,18 +27,14 @@
                 </div>
             </div>
 
-            <div class="console-panel">
-                <h3>Console Output</h3>
-                <div id="console-output">
-                    <div>Open browser console (F12) to see detailed simulation output</div>
+            <div class="visualization-section">
+                <h3>Market Visualization</h3>
+                <div id="visualization">
+                    <canvas id="market-canvas" width="800" height="600"></canvas>
                 </div>
-            </div>
-        </div>
-
-        <div class="visualization-section">
-            <h3>Market Visualization</h3>
-            <div id="visualization">
-                <canvas id="market-canvas" width="800" height="600"></canvas>
+                <div class="console-note">
+                    💡 <strong>Tip:</strong> Open browser console (F12) to see detailed simulation output and transaction logs.
+                </div>
             </div>
         </div>
 
@@ -65,6 +61,9 @@
     <script src="js/core/House.js"></script>
     <script src="js/core/Auction.js"></script>
     <script src="js/core/Market.js"></script>
+    
+    <!-- Include UI components -->
+    <script src="js/ui/SimulationRenderer.js"></script>
     
     <!-- Include main simulation -->
     <script src="js/main.js"></script>

@@ -93,6 +93,7 @@ describe('House Class', () => {
         });
 
         it('should not increment when not owned', () => {
+            house.owner = null; // Ensure no owner
             house.yearsSinceOwnership = 2;
             
             house.incrementOwnershipYears();
@@ -102,11 +103,13 @@ describe('House Class', () => {
 
     describe('getColorState', () => {
         it('should return "available" when not owned and not new', () => {
+            house.owner = null; // Ensure not owned
             house.yearsSinceOwnership = 1;
             assert.strictEqual(house.getColorState(), 'available');
         });
 
         it('should return "just-available" when not owned and new', () => {
+            house.owner = null; // Ensure not owned
             house.yearsSinceOwnership = 0;
             assert.strictEqual(house.getColorState(), 'just-available');
         });
@@ -126,6 +129,12 @@ describe('House Class', () => {
 
     describe('getDisplayInfo', () => {
         it('should return complete display information', () => {
+            // Mock MathUtils for this test since we're running in Node.js
+            const originalMathUtils = global.MathUtils;
+            global.MathUtils = {
+                formatCurrency: (amount) => `$${Math.round(amount).toLocaleString()}`
+            };
+            
             house.owner = person;
             house.yearsSinceOwnership = 3;
             
@@ -141,6 +150,9 @@ describe('House Class', () => {
             assert.strictEqual(info.colorState, 'occupied');
             assert(info.formattedIntrinsicValue.includes('$500,000'));
             assert(info.formattedLastPrice.includes('$450,000'));
+            
+            // Restore original MathUtils
+            global.MathUtils = originalMathUtils;
         });
     });
 });
