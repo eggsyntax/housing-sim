@@ -15,6 +15,12 @@ class SimulationRenderer {
         this.consoleDiv = consoleElement;
         this.analyticsContainer = analyticsContainer;
         
+        // View mode state
+        this.viewMode = 'market'; // 'market' or 'analytics'
+        this.percentageMetrics = ['housingRate', 'occupancyRate', 'giniCoefficient'];
+        this.currencyMetrics = ['averageHouseValue', 'averageWealth'];
+        this.chartRenderer = null;
+        
         // Layout configuration (optimized for 100 houses)
         this.gridCols = 10;
         this.gridRows = 10;
@@ -30,7 +36,7 @@ class SimulationRenderer {
             'just-occupied': '#add8e6',     // Light blue - just became occupied
             background: '#ecf0f1',          // Light gray background
             person: '#2c3e50',              // Dark blue for people
-            personHomeless: '#e67e22',      // Orange for homeless people
+            personHomeless: '#e67e22',      // Orange for people looking for houses
             border: '#34495e',              // Dark gray for borders
             text: '#2c3e50'                 // Dark text
         };
@@ -45,6 +51,9 @@ class SimulationRenderer {
         // Setup canvas
         this.setupCanvas();
         
+        // Initialize chart renderer
+        this.chartRenderer = new ChartRenderer(this.canvas);
+        
         // Console output is handled separately through browser console
     }
 
@@ -53,7 +62,7 @@ class SimulationRenderer {
      */
     setupCanvas() {
         // Calculate canvas size based on grid and house size
-        const canvasWidth = this.gridCols * (this.houseSize + this.margin) + this.margin + 200; // Extra space for homeless area
+        const canvasWidth = this.gridCols * (this.houseSize + this.margin) + this.margin + 200; // Extra space for looking area
         const canvasHeight = this.gridRows * (this.houseSize + this.margin) + this.margin + 100; // Extra space for info
         
         this.canvas.width = canvasWidth;
@@ -79,6 +88,18 @@ class SimulationRenderer {
      */
 
     renderMarket(market) {
+        if (this.viewMode === 'analytics') {
+            this.renderAnalytics(market);
+        } else {
+            this.renderMarketView(market);
+        }
+    }
+
+    /**
+     * Renders the market visualization view.
+     * @param {Market} market - The market instance to render
+     */
+    renderMarketView(market) {
         // Clear canvas
         this.ctx.fillStyle = this.colors.background;
         this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
@@ -98,13 +119,51 @@ class SimulationRenderer {
         // Draw legend
         this.renderLegend();
         
-        // Draw homeless area
-        this.renderHomelessArea(market.people);
+        // Draw looking area
+        this.renderLookingArea(market.people);
         
         // Re-render tooltip if we have a hovered house
         if (this.hoveredHouse && this.mouseX !== undefined && this.mouseY !== undefined) {
             this.renderTooltip(this.mouseX, this.mouseY, this.hoveredHouse);
         }
+    }
+
+    /**
+     * Renders the analytics view with historical charts.
+     * @param {Market} market - The market instance to render
+     */
+    renderAnalytics(market) {
+        const analyticsHistory = market.getAnalyticsHistory();
+        
+        // Clear canvas
+        this.ctx.fillStyle = '#ffffff';
+        this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+        
+        // Draw title
+        this.ctx.fillStyle = this.colors.text;
+        this.ctx.font = 'bold 18px Arial';
+        this.ctx.textAlign = 'left';
+        this.ctx.fillText(`Market Analytics - Year ${market.currentYear}`, 10, 25);
+        
+        if (analyticsHistory.getDataPointCount() === 0) {
+            // No data available message
+            this.ctx.fillStyle = '#6b7280';
+            this.ctx.font = '16px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('No historical data available yet', this.canvas.width / 2, this.canvas.height / 2);
+            this.ctx.fillText('Run the simulation to collect data', this.canvas.width / 2, this.canvas.height / 2 + 25);
+            return;
+        }
+        
+        // Create two separate chart renderers for top and bottom charts
+        const topChartHeight = Math.floor((this.canvas.height - 80) * 0.6); // 60% for percentage chart
+        const bottomChartHeight = Math.floor((this.canvas.height - 80) * 0.4); // 40% for currency chart
+        
+        // Render percentage metrics chart (top)
+        this.renderPercentageChart(analyticsHistory, topChartHeight);
+        
+        // Render currency metrics chart (bottom)
+        this.renderCurrencyChart(analyticsHistory, bottomChartHeight, topChartHeight + 60);
     }
 
     /**
@@ -201,16 +260,16 @@ class SimulationRenderer {
         this.ctx.fillText(person.id.replace('person_', 'P'), personX + this.personSize/2, personY + this.personSize/2);
     }
 
-    renderHomelessArea(people) {
-        const homelessPeople = people.filter(p => !p.house);
+    renderLookingArea(people) {
+        const lookingPeople = people.filter(p => !p.house);
         
-        if (homelessPeople.length === 0) return;
+        if (lookingPeople.length === 0) return;
         
-        // Draw homeless area
+        // Draw looking area
         const areaX = this.gridCols * (this.houseSize + this.margin) + 20;
         const areaY = 50;
         const areaWidth = 150;
-        const areaHeight = Math.max(200, homelessPeople.length * 25 + 40);
+        const areaHeight = Math.max(200, lookingPeople.length * 25 + 40);
         
         // Draw background
         this.ctx.fillStyle = '#f8f9fa';
@@ -225,10 +284,10 @@ class SimulationRenderer {
         this.ctx.fillStyle = this.colors.text;
         this.ctx.font = 'bold 12px Arial';
         this.ctx.textAlign = 'center';
-        this.ctx.fillText('Unhoused', areaX + areaWidth/2, areaY + 20);
+        this.ctx.fillText('Looking', areaX + areaWidth/2, areaY + 20);
         
-        // Draw homeless people
-        homelessPeople.forEach((person, index) => {
+        // Draw looking people
+        lookingPeople.forEach((person, index) => {
             const personY = areaY + 35 + index * 25;
             
             // Draw person circle
@@ -365,7 +424,7 @@ class SimulationRenderer {
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Housed:</span>
-                    <span class="stat-value">${stats.housedPeople}/${stats.totalPeople} (${(stats.occupancyRate * 100).toFixed(1)}%)</span>
+                    <span class="stat-value">${stats.housedPeople}/${stats.totalPeople} (${((stats.housedPeople / stats.totalPeople) * 100).toFixed(1)}%)</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Available:</span>
@@ -438,8 +497,8 @@ class SimulationRenderer {
             if (this.market) {
                 this.renderMarket(this.market);
                 
-                // Add auction feedback with current animation frame
-                if (this.lastAuctionResults) {
+                // Add auction feedback only in market view mode
+                if (this.viewMode === 'market' && this.lastAuctionResults) {
                     this.renderAuctionFeedback(this.lastAuctionResults);
                 }
             }
@@ -468,7 +527,7 @@ class SimulationRenderer {
                 this.hoveredHouse = null;
                 if (this.market) {
                     this.renderMarket(this.market);
-                    if (this.lastAuctionResults) {
+                    if (this.viewMode === 'market' && this.lastAuctionResults) {
                         this.renderAuctionFeedback(this.lastAuctionResults);
                     }
                 }
@@ -497,11 +556,11 @@ class SimulationRenderer {
             // Re-render to show/hide tooltip
             if (this.market) {
                 this.renderMarket(this.market);
-                if (this.lastAuctionResults) {
+                if (this.viewMode === 'market' && this.lastAuctionResults) {
                     this.renderAuctionFeedback(this.lastAuctionResults);
                 }
-                // Only render tooltip if we have a hovered house
-                if (this.hoveredHouse) {
+                // Only render tooltip if we have a hovered house and in market view
+                if (this.viewMode === 'market' && this.hoveredHouse) {
                     this.renderTooltip(x, y, this.hoveredHouse);
                 }
             }
@@ -619,6 +678,223 @@ class SimulationRenderer {
     handleClick(x, y, market) {
         // Future: Show detailed information panels
         console.log(`Click at (${x}, ${y})`);
+    }
+
+    /**
+     * Renders the percentage metrics chart.
+     * @param {AnalyticsHistory} analyticsHistory - The analytics history instance
+     * @param {number} chartHeight - Height of the chart area
+     */
+    renderPercentageChart(analyticsHistory, chartHeight) {
+        // Create datasets for percentage metrics
+        const datasets = this.percentageMetrics.map((metric, index) => {
+            const rawData = analyticsHistory.getTimeSeriesData(metric);
+            const metricInfo = this.getMetricInfo(metric);
+            
+            // Convert to percentage scale (0-100)
+            const data = rawData.map(d => ({
+                x: d.x,
+                y: metric === 'giniCoefficient' ? d.y * 100 : // Convert Gini to percentage
+                   metric === 'housingRate' ? d.y * 100 :     // Convert housing rate to percentage  
+                   metric === 'occupancyRate' ? d.y * 100 :   // Convert occupancy rate to percentage
+                   d.y
+            }));
+            
+            return {
+                label: metricInfo.label,
+                data: data,
+                color: this.chartRenderer.colors[index % this.chartRenderer.colors.length]
+            };
+        }).filter(dataset => dataset.data.length > 0);
+        
+        if (datasets.length > 0) {
+            // Create a temporary canvas for the percentage chart
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = this.canvas.width;
+            tempCanvas.height = chartHeight;
+            const tempRenderer = new ChartRenderer(tempCanvas);
+            
+            // Force Y-axis to 0-100%
+            tempRenderer.renderLineChartWithFixedScale(datasets, {
+                title: 'Market Trends (%)',
+                xLabel: 'Simulation Year',
+                yLabel: 'Percentage (%)',
+                formatY: 'percentage',
+                yMin: 0,
+                yMax: 100
+            });
+            
+            // Copy to main canvas
+            this.ctx.drawImage(tempCanvas, 0, 40);
+        }
+    }
+
+    /**
+     * Renders the currency metrics chart.
+     * @param {AnalyticsHistory} analyticsHistory - The analytics history instance
+     * @param {number} chartHeight - Height of the chart area
+     * @param {number} yOffset - Y offset for positioning
+     */
+    renderCurrencyChart(analyticsHistory, chartHeight, yOffset) {
+        // Create datasets for currency metrics
+        const datasets = this.currencyMetrics.map((metric, index) => {
+            const data = analyticsHistory.getTimeSeriesData(metric);
+            const metricInfo = this.getMetricInfo(metric);
+            
+            return {
+                label: metricInfo.label,
+                data: data,
+                color: this.chartRenderer.colors[(index + 3) % this.chartRenderer.colors.length] // Offset colors
+            };
+        }).filter(dataset => dataset.data.length > 0);
+        
+        if (datasets.length > 0) {
+            // Create a temporary canvas for the currency chart
+            const tempCanvas = document.createElement('canvas');
+            tempCanvas.width = this.canvas.width;
+            tempCanvas.height = chartHeight;
+            const tempRenderer = new ChartRenderer(tempCanvas);
+            
+            tempRenderer.renderLineChart(datasets, {
+                title: 'Financial Metrics ($)',
+                xLabel: 'Simulation Year',
+                yLabel: 'Dollar Value ($)',
+                formatY: 'currency'
+            });
+            
+            // Copy to main canvas
+            this.ctx.drawImage(tempCanvas, 0, yOffset);
+        }
+    }
+
+    /**
+     * Normalizes datasets to 0-100 scale for better multi-metric visualization.
+     * @param {Array} datasets - Array of datasets with different scales
+     * @returns {Array} Normalized datasets
+     */
+    normalizeDatasets(datasets) {
+        return datasets.map(dataset => {
+            if (dataset.data.length === 0) return dataset;
+            
+            const values = dataset.data.map(d => d.y);
+            const min = Math.min(...values);
+            const max = Math.max(...values);
+            const range = max - min;
+            
+            // Avoid division by zero
+            if (range === 0) {
+                return {
+                    ...dataset,
+                    data: dataset.data.map(d => ({ x: d.x, y: 50 })) // Middle value if no variation
+                };
+            }
+            
+            // Normalize to 0-100 scale
+            const normalizedData = dataset.data.map(d => ({
+                x: d.x,
+                y: ((d.y - min) / range) * 100
+            }));
+            
+            return {
+                ...dataset,
+                data: normalizedData,
+                originalRange: { min, max }, // Store original range for reference
+                label: `${dataset.label} (${min.toFixed(1)}-${max.toFixed(1)})`
+            };
+        });
+    }
+
+    /**
+     * Sets the view mode (market or analytics).
+     * @param {string} mode - The view mode ('market' or 'analytics')
+     */
+    setViewMode(mode) {
+        this.viewMode = mode;
+    }
+
+    /**
+     * Gets the current view mode.
+     * @returns {string} The current view mode
+     */
+    getViewMode() {
+        return this.viewMode;
+    }
+
+    /**
+     * Sets the selected metrics for analytics view.
+     * @param {Array} metrics - Array of metric names to display
+     */
+    setSelectedMetrics(metrics) {
+        this.selectedMetrics = metrics;
+    }
+
+    /**
+     * Gets metric information for display.
+     * @param {string} metric - The metric name
+     * @returns {Object} Metric information with label and format
+     */
+    getMetricInfo(metric) {
+        const metricInfoMap = {
+            totalPeople: { label: 'Total People', format: 'number' },
+            housedPeople: { label: 'Housed People', format: 'number' },
+            houselessPeople: { label: 'Looking for Houses', format: 'number' },
+            housingRate: { label: 'Housing Rate', format: 'percentage' },
+            totalHouses: { label: 'Total Houses', format: 'number' },
+            occupiedHouses: { label: 'Occupied Houses', format: 'number' },
+            availableHouses: { label: 'Available Houses', format: 'number' },
+            occupancyRate: { label: 'Occupancy Rate', format: 'percentage' },
+            averageWealth: { label: 'Average Wealth', format: 'currency' },
+            medianWealth: { label: 'Median Wealth', format: 'currency' },
+            wealthRange: { label: 'Wealth Range', format: 'currency' },
+            giniCoefficient: { label: 'Gini Coefficient', format: 'percentage' },
+            wealthConcentration: { label: 'Top 10% Wealth', format: 'percentage' },
+            averageHouseValue: { label: 'Average House Value', format: 'currency' },
+            medianHouseValue: { label: 'Median House Value', format: 'currency' },
+            houseValueRange: { label: 'House Value Range', format: 'currency' },
+            affordabilityRatio: { label: 'Affordability Ratio', format: 'decimal' },
+            marketVelocity: { label: 'Market Velocity', format: 'number' },
+            auctionSuccessRate: { label: 'Auction Success Rate', format: 'percentage' },
+            averageAuctionPrice: { label: 'Average Auction Price', format: 'currency' }
+        };
+        
+        return metricInfoMap[metric] || { label: metric, format: 'number' };
+    }
+
+    /**
+     * Gets available metrics grouped by category.
+     * @returns {Object} Metrics grouped by category
+     */
+    getAvailableMetrics() {
+        return {
+            population: [
+                { key: 'totalPeople', label: 'Total People' },
+                { key: 'housedPeople', label: 'Housed People' },
+                { key: 'houselessPeople', label: 'Looking for Houses' },
+                { key: 'housingRate', label: 'Housing Rate' }
+            ],
+            housing: [
+                { key: 'totalHouses', label: 'Total Houses' },
+                { key: 'occupiedHouses', label: 'Occupied Houses' },
+                { key: 'availableHouses', label: 'Available Houses' },
+                { key: 'occupancyRate', label: 'Occupancy Rate' }
+            ],
+            wealth: [
+                { key: 'averageWealth', label: 'Average Wealth' },
+                { key: 'medianWealth', label: 'Median Wealth' },
+                { key: 'giniCoefficient', label: 'Gini Coefficient' },
+                { key: 'wealthConcentration', label: 'Top 10% Wealth Share' }
+            ],
+            market: [
+                { key: 'averageHouseValue', label: 'Average House Value' },
+                { key: 'medianHouseValue', label: 'Median House Value' },
+                { key: 'affordabilityRatio', label: 'Affordability Ratio' },
+                { key: 'marketVelocity', label: 'Market Velocity' }
+            ],
+            auctions: [
+                { key: 'auctionSuccessRate', label: 'Auction Success Rate' },
+                { key: 'averageAuctionPrice', label: 'Average Auction Price' }
+            ]
+        };
     }
 }
 

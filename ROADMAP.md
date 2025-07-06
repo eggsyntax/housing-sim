@@ -64,6 +64,22 @@ getBidAmount(house) {
 - Periodic events that affect wealth distribution or house values
 - Could test market resilience and recovery patterns
 
+### Analytics History Tracking (Phase 4 Priority)
+- **Time-series data collection**: Track all analytics variables over time (housed count, wealth distribution, affordability ratios, etc.)
+- **Graphical analytics view**: Toggle-able view that replaces the market visualization with graphs of historical data
+- **Key metrics to track**:
+  - Population metrics (housed vs. unhoused over time)
+  - Wealth inequality (Gini coefficient trends)
+  - Market efficiency (occupancy rates, turnover)
+  - Price trends (average house values, affordability ratios)
+  - Market velocity (auction success rates, trade volume)
+- **Implementation considerations**:
+  - Add `AnalyticsHistory` class to store time-series data
+  - Modify `SimulationRenderer` to support analytics view mode
+  - Add chart rendering using Canvas or lightweight charting library
+  - Provide view toggle controls (Market View / Analytics View)
+  - Consider data export functionality for research use
+
 ### Advanced Analytics
 - Market concentration indices (Herfindahl-Hirschman Index)
 - Price volatility metrics

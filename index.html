@@ -28,7 +28,13 @@
             </div>
 
             <div class="visualization-section">
-                <h3>Market Visualization</h3>
+                <div class="view-controls">
+                    <h3 id="view-title">Market Visualization</h3>
+                    <div class="view-toggle">
+                        <button id="marketViewBtn" class="view-btn active">Market View</button>
+                        <button id="analyticsViewBtn" class="view-btn">Analytics View</button>
+                    </div>
+                </div>
                 <div id="visualization">
                     <canvas id="market-canvas" width="800" height="600"></canvas>
                 </div>
@@ -55,11 +61,13 @@
     <!-- Include utility scripts first -->
     <script src="js/utils/MathUtils.js"></script>
     <script src="js/utils/Config.js"></script>
+    <script src="js/utils/ChartRenderer.js"></script>
     
     <!-- Include core classes -->
     <script src="js/core/Person.js"></script>
     <script src="js/core/House.js"></script>
     <script src="js/core/Auction.js"></script>
+    <script src="js/core/AnalyticsHistory.js"></script>
     <script src="js/core/Market.js"></script>
     
     <!-- Include UI components -->

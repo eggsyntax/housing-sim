@@ -20,6 +20,10 @@ class Market {
         this.House = typeof House !== 'undefined' ? House : require('./House.js');
         this.Person = typeof Person !== 'undefined' ? Person : require('./Person.js');
         this.Auction = typeof Auction !== 'undefined' ? Auction : require('./Auction.js');
+        this.AnalyticsHistory = typeof AnalyticsHistory !== 'undefined' ? AnalyticsHistory : require('./AnalyticsHistory.js');
+        
+        // Initialize analytics history tracking
+        this.analyticsHistory = new this.AnalyticsHistory();
         
         this.initialize();
     }
@@ -124,6 +128,9 @@ class Market {
         
         // Show market status
         this.showMarketStatus();
+        
+        // Record analytics snapshot
+        this.analyticsHistory.recordSnapshot(this.getMarketStats());
         
         // Advance year
         this.currentYear++;
@@ -334,14 +341,17 @@ class Market {
         // Market velocity (houses that changed hands recently)
         const recentlyTraded = this.houses.filter(h => h.yearsSinceOwnership <= 1 && h.owner);
         
-        // Wealth distribution metrics (Gini coefficient approximation)
-        let giniSum = 0;
-        for (let i = 0; i < wealths.length; i++) {
-            for (let j = 0; j < wealths.length; j++) {
-                giniSum += Math.abs(wealths[i] - wealths[j]);
+        // Wealth distribution metrics (Gini coefficient calculation)
+        let giniCoefficient = 0;
+        if (wealths.length > 1 && totalWealth > 0) {
+            let giniSum = 0;
+            for (let i = 0; i < wealths.length; i++) {
+                for (let j = 0; j < wealths.length; j++) {
+                    giniSum += Math.abs(wealths[i] - wealths[j]);
+                }
             }
+            giniCoefficient = giniSum / (2 * wealths.length * wealths.length * (totalWealth / wealths.length));
         }
-        const giniCoefficient = totalWealth > 0 ? giniSum / (2 * wealths.length * totalWealth) : 0;
         
         // Market concentration (what percentage of wealth is held by top 10%)
         const top10PercentCount = Math.max(1, Math.floor(wealths.length * 0.1));
@@ -394,6 +404,14 @@ class Market {
                     : 0
             } : null
         };
+    }
+
+    /**
+     * Gets the analytics history tracker.
+     * @returns {AnalyticsHistory} The analytics history instance
+     */
+    getAnalyticsHistory() {
+        return this.analyticsHistory;
     }
 }
 

@@ -71,6 +71,39 @@ class Simulation {
                 }
             });
         }
+        
+        // Setup view toggle controls
+        this.setupViewToggle();
+    }
+
+    setupViewToggle() {
+        const marketViewBtn = document.getElementById('marketViewBtn');
+        const analyticsViewBtn = document.getElementById('analyticsViewBtn');
+        const viewTitle = document.getElementById('view-title');
+        
+        if (marketViewBtn && analyticsViewBtn && viewTitle) {
+            marketViewBtn.addEventListener('click', () => {
+                this.setViewMode('market');
+                marketViewBtn.classList.add('active');
+                analyticsViewBtn.classList.remove('active');
+                viewTitle.textContent = 'Market Visualization';
+                this.updateDisplay();
+            });
+            
+            analyticsViewBtn.addEventListener('click', () => {
+                this.setViewMode('analytics');
+                analyticsViewBtn.classList.add('active');
+                marketViewBtn.classList.remove('active');
+                viewTitle.textContent = 'Market Analytics';
+                this.updateDisplay();
+            });
+        }
+    }
+
+    setViewMode(mode) {
+        if (this.renderer) {
+            this.renderer.setViewMode(mode);
+        }
     }
 
     start() {
