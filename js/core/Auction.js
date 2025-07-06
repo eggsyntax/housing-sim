@@ -29,7 +29,12 @@ class Auction {
 
     auctionSingleHouse(house, valueIntrinsicness, upgradeThreshold, alreadyWon = new Set()) {
         const houseValue = house.calculateValue(valueIntrinsicness);
-        console.log(`\nAuctioning ${house.id} (Value: ${this.MathUtils.formatCurrency(houseValue)})`);
+        
+        // Reduce console output for large markets
+        const showDetails = this.houses.length <= 20;
+        if (showDetails) {
+            console.log(`\nAuctioning ${house.id} (Value: ${this.MathUtils.formatCurrency(houseValue)})`);
+        }
         
         // Determine who will bid on this house (excluding those who already won)
         const bidders = this.eligibleBidders.filter(person => 
@@ -37,7 +42,9 @@ class Auction {
         );
         
         if (bidders.length === 0) {
-            console.log(`  No bidders for ${house.id}`);
+            if (showDetails) {
+                console.log(`  No bidders for ${house.id}`);
+            }
             return {
                 house: house,
                 winner: null,
@@ -47,7 +54,7 @@ class Auction {
             };
         }
 
-        // Get bids (everyone bids their full wealth)
+        // Get bids from each bidder (everyone bids their full wealth)
         const bids = bidders.map(person => ({
             person: person,
             amount: person.getBidAmount()
@@ -69,9 +76,11 @@ class Auction {
             priceToPayGeneric = bids[1].amount;
         }
 
-        console.log(`  Winner: ${winner.id} (Wealth: ${this.MathUtils.formatCurrency(winner.wealth)})`);
-        console.log(`  Price paid: ${this.MathUtils.formatCurrency(priceToPayGeneric)}`);
-        console.log(`  Bidders: ${bidders.length}`);
+        if (showDetails) {
+            console.log(`  Winner: ${winner.id} (Wealth: ${this.MathUtils.formatCurrency(winner.wealth)})`);
+            console.log(`  Price paid: ${this.MathUtils.formatCurrency(priceToPayGeneric)}`);
+            console.log(`  Bidders: ${bidders.length}`);
+        }
 
         return {
             house: house,

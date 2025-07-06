@@ -15,12 +15,12 @@ class SimulationRenderer {
         this.consoleDiv = consoleElement;
         this.analyticsContainer = analyticsContainer;
         
-        // Layout configuration
+        // Layout configuration (optimized for 100 houses)
         this.gridCols = 10;
         this.gridRows = 10;
-        this.houseSize = 50;
-        this.personSize = 12;
-        this.margin = 10;
+        this.houseSize = 40; // Reduced for better fit with 100 houses
+        this.personSize = 10; // Proportionally reduced
+        this.margin = 8; // Reduced margin for better space utilization
         
         // Colors for different states - lighter/pastel versions for better text contrast
         this.colors = {
@@ -133,9 +133,9 @@ class SimulationRenderer {
         this.ctx.lineWidth = 2;
         this.ctx.strokeRect(x, y, this.houseSize, this.houseSize);
         
-        // Draw house ID
+        // Draw house ID (optimized for smaller houses)
         this.ctx.fillStyle = this.colors.text;
-        this.ctx.font = 'bold 11px Arial';
+        this.ctx.font = 'bold 9px Arial';
         this.ctx.textAlign = 'center';
         
         // Add text shadow for readability
@@ -144,24 +144,17 @@ class SimulationRenderer {
         this.ctx.shadowOffsetX = 1;
         this.ctx.shadowOffsetY = 1;
         
-        this.ctx.fillText(house.id.replace('house_', 'H'), x + this.houseSize/2, y + 12);
+        this.ctx.fillText(house.id.replace('house_', 'H'), x + this.houseSize/2, y + 10);
         
-        // Draw value
-        this.ctx.font = 'bold 9px Arial';
+        // Draw value (simplified for performance)
+        this.ctx.font = 'bold 7px Arial';
         const value = Math.round(info.currentValue / 1000) + 'k';
-        this.ctx.fillText(value, x + this.houseSize/2, y + 25);
+        this.ctx.fillText(value, x + this.houseSize/2, y + 20);
         
-        // Draw last price if different from value
-        if (Math.abs(info.currentValue - info.lastSellingPrice) > 1000) {
-            this.ctx.font = '8px Arial';
-            const price = Math.round(info.lastSellingPrice / 1000) + 'k';
-            this.ctx.fillText(`($${price})`, x + this.houseSize/2, y + 35);
-        }
-        
-        // Draw ownership years if owned
+        // Draw ownership years if owned (simplified)
         if (!info.isAvailable && info.yearsSinceOwnership > 0) {
-            this.ctx.font = '8px Arial';
-            this.ctx.fillText(`${info.yearsSinceOwnership}y`, x + this.houseSize/2, y + this.houseSize - 8);
+            this.ctx.font = '6px Arial';
+            this.ctx.fillText(`${info.yearsSinceOwnership}y`, x + this.houseSize/2, y + this.houseSize - 6);
         }
         
         // Reset shadow
@@ -359,7 +352,7 @@ class SimulationRenderer {
         
         const stats = market.getMarketStats();
         
-        // Update statistics display
+        // Update statistics display with enhanced analytics
         this.analyticsContainer.innerHTML = `
             <div class="stats-grid">
                 <div class="stat-item">
@@ -367,19 +360,15 @@ class SimulationRenderer {
                     <span class="stat-value">${stats.currentYear}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Tick:</span>
-                    <span class="stat-value">${stats.tickCount}</span>
-                </div>
-                <div class="stat-item">
                     <span class="stat-label">Population:</span>
                     <span class="stat-value">${stats.totalPeople}</span>
                 </div>
                 <div class="stat-item">
                     <span class="stat-label">Housed:</span>
-                    <span class="stat-value">${stats.housedPeople}/${stats.totalPeople}</span>
+                    <span class="stat-value">${stats.housedPeople}/${stats.totalPeople} (${(stats.occupancyRate * 100).toFixed(1)}%)</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Available Houses:</span>
+                    <span class="stat-label">Available:</span>
                     <span class="stat-value">${stats.availableHouses}/${stats.totalHouses}</span>
                 </div>
                 <div class="stat-item">
@@ -387,13 +376,35 @@ class SimulationRenderer {
                     <span class="stat-value">${this.formatCurrency(stats.averageWealth)}</span>
                 </div>
                 <div class="stat-item">
+                    <span class="stat-label">Median Wealth:</span>
+                    <span class="stat-value">${this.formatCurrency(stats.medianWealth)}</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Wealth Inequality:</span>
+                    <span class="stat-value">${(stats.giniCoefficient * 100).toFixed(1)}%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Top 10% Wealth:</span>
+                    <span class="stat-value">${(stats.wealthConcentration * 100).toFixed(1)}%</span>
+                </div>
+                <div class="stat-item">
                     <span class="stat-label">Avg House Value:</span>
                     <span class="stat-value">${this.formatCurrency(stats.averageHouseValue)}</span>
                 </div>
                 <div class="stat-item">
-                    <span class="stat-label">Market Activity:</span>
-                    <span class="stat-value">${stats.occupiedHouses > 0 ? 'Active' : 'Quiet'}</span>
+                    <span class="stat-label">Market Velocity:</span>
+                    <span class="stat-value">${stats.marketVelocity} recent trades</span>
                 </div>
+                <div class="stat-item">
+                    <span class="stat-label">Affordability:</span>
+                    <span class="stat-value">${stats.affordabilityRatio.toFixed(2)}x</span>
+                </div>
+                ${stats.lastAuctionResults ? `
+                <div class="stat-item">
+                    <span class="stat-label">Last Auction:</span>
+                    <span class="stat-value">${stats.lastAuctionResults.successfulSales}/${stats.lastAuctionResults.totalAuctioned} sold</span>
+                </div>
+                ` : ''}
             </div>
         `;
     }

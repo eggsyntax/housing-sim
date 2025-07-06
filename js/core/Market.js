@@ -89,7 +89,12 @@ class Market {
             // Remove from available houses
             this.availableHouses = this.availableHouses.filter(h => h !== house);
             
-            console.log(`  ${person.id} (wealth: ${this.MathUtils.formatCurrency(person.wealth)}) -> ${house.id} (value: ${this.MathUtils.formatCurrency(house.calculateValue())})`);
+            // Reduce console spam for large markets
+            if (this.houses.length <= 20 || i < 5 || i >= numHousesToOccupy - 5) {
+                console.log(`  ${person.id} (wealth: ${this.MathUtils.formatCurrency(person.wealth)}) -> ${house.id} (value: ${this.MathUtils.formatCurrency(house.calculateValue())})`);
+            } else if (i === 5) {
+                console.log(`  ... (${numHousesToOccupy - 10} more assignments) ...`);
+            }
         }
     }
 
@@ -105,6 +110,9 @@ class Market {
         // Age all house ownerships
         this.houses.forEach(house => house.incrementOwnershipYears());
         
+        // Apply vacant house depreciation
+        this.applyVacantDepreciation();
+        
         // Process exits
         this.processExits();
         
@@ -119,6 +127,44 @@ class Market {
         
         // Advance year
         this.currentYear++;
+    }
+
+    /**
+     * Applies depreciation to vacant houses based on configuration.
+     */
+    applyVacantDepreciation() {
+        const depreciationRate = this.config.get('vacant_depreciation');
+        if (depreciationRate <= 0) return;
+        
+        const vacantHouses = this.houses.filter(h => h.isAvailable());
+        if (vacantHouses.length === 0) return;
+        
+        console.log(`\n--- Applying Vacant House Depreciation (${(depreciationRate * 100).toFixed(1)}%) ---`);
+        
+        let depreciatedCount = 0;
+        let totalValueLoss = 0;
+        
+        vacantHouses.forEach(house => {
+            const oldValue = house.intrinsicValue;
+            house.applyVacantDepreciation(depreciationRate);
+            const valueLoss = oldValue - house.intrinsicValue;
+            
+            if (valueLoss > 0) {
+                depreciatedCount++;
+                totalValueLoss += valueLoss;
+                
+                // Only log for smaller markets to avoid spam
+                if (this.houses.length <= 20) {
+                    console.log(`  ${house.id}: ${this.MathUtils.formatCurrency(oldValue)} -> ${this.MathUtils.formatCurrency(house.intrinsicValue)} (-${this.MathUtils.formatCurrency(valueLoss)})`);
+                }
+            }
+        });
+        
+        if (depreciatedCount > 0) {
+            console.log(`Applied depreciation to ${depreciatedCount} vacant house${depreciatedCount > 1 ? 's' : ''}, total value loss: ${this.MathUtils.formatCurrency(totalValueLoss)}`);
+        } else {
+            console.log(`No vacant houses to depreciate`);
+        }
     }
 
     processExits() {
@@ -164,37 +210,83 @@ class Market {
         }
     }
 
+    /**
+     * Conducts multiple auction batches based on n_auction_steps configuration.
+     * Each batch auctions a subset of available houses, creating more dynamic market activity.
+     */
     conductAuctions() {
         if (this.availableHouses.length === 0) {
             console.log('\n--- No Houses Available for Auction ---');
             return;
         }
         
-        console.log(`\n--- Conducting Auctions ---`);
+        const nAuctionSteps = this.config.get('n_auction_steps');
+        console.log(`\n--- Conducting ${nAuctionSteps} Auction Batch${nAuctionSteps > 1 ? 'es' : ''} ---`);
         console.log(`Available houses: ${this.availableHouses.length}`);
         
-        // For MVP, we'll do single-batch auctions
-        const auction = new this.Auction(this.availableHouses, this.people);
-        const results = auction.conductVickreyAuction(
-            this.config.get('value_intrinsicness'),
-            this.config.get('upgrade_threshold')
-        );
+        let allAuctionResults = [];
+        let totalReport = {
+            successfulSales: 0,
+            totalHouses: 0,
+            totalRevenue: 0,
+            averagePrice: 0
+        };
         
-        auction.executeTransactions();
+        // Divide houses into batches
+        const housesPerBatch = Math.max(1, Math.ceil(this.availableHouses.length / nAuctionSteps));
         
-        // Store auction results for visualization
-        this.lastAuctionResults = results;
+        for (let batchNum = 0; batchNum < nAuctionSteps && this.availableHouses.length > 0; batchNum++) {
+            console.log(`\n=== Auction Batch ${batchNum + 1}/${nAuctionSteps} ===`);
+            
+            // Select houses for this batch
+            const batchHouses = this.availableHouses.slice(0, housesPerBatch);
+            
+            if (batchHouses.length === 0) break;
+            
+            console.log(`Auctioning ${batchHouses.length} house${batchHouses.length > 1 ? 's' : ''}`);
+            
+            // Conduct auction for this batch
+            const auction = new this.Auction(batchHouses, this.people);
+            const results = auction.conductVickreyAuction(
+                this.config.get('value_intrinsicness'),
+                this.config.get('upgrade_threshold')
+            );
+            
+            auction.executeTransactions();
+            allAuctionResults.push(...results);
+            
+            // Remove sold houses from available list
+            const soldHouses = auction.getSuccessfulSales().map(result => result.house);
+            this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
+            
+            // Accumulate batch statistics
+            const batchReport = auction.generateReport();
+            totalReport.successfulSales += batchReport.successfulSales;
+            totalReport.totalHouses += batchReport.totalHouses;
+            totalReport.totalRevenue += batchReport.totalRevenue;
+            
+            console.log(`Batch ${batchNum + 1} results: ${batchReport.successfulSales}/${batchReport.totalHouses} houses sold`);
+            
+            // Brief pause between batches (simulates time delay)
+            if (batchNum < nAuctionSteps - 1 && this.availableHouses.length > 0) {
+                console.log(`--- Brief delay before next batch ---`);
+            }
+        }
         
-        // Remove sold houses from available list
-        const soldHouses = auction.getSuccessfulSales().map(result => result.house);
-        this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
+        // Store all auction results for visualization
+        this.lastAuctionResults = allAuctionResults;
         
-        // Show auction summary
-        const report = auction.generateReport();
-        console.log(`\n--- Auction Summary ---`);
-        console.log(`Houses sold: ${report.successfulSales}/${report.totalHouses}`);
-        console.log(`Total revenue: ${this.MathUtils.formatCurrency(report.totalRevenue)}`);
-        console.log(`Average price: ${this.MathUtils.formatCurrency(report.averagePrice)}`);
+        // Calculate overall statistics
+        totalReport.averagePrice = totalReport.successfulSales > 0 
+            ? totalReport.totalRevenue / totalReport.successfulSales 
+            : 0;
+        
+        // Show overall auction summary
+        console.log(`\n--- Overall Auction Summary ---`);
+        console.log(`Total houses sold: ${totalReport.successfulSales}/${totalReport.totalHouses}`);
+        console.log(`Total revenue: ${this.MathUtils.formatCurrency(totalReport.totalRevenue)}`);
+        console.log(`Average price: ${this.MathUtils.formatCurrency(totalReport.averagePrice)}`);
+        console.log(`Remaining available houses: ${this.availableHouses.length}`);
     }
 
     showMarketStatus() {
@@ -220,12 +312,52 @@ class Market {
         console.log(`Average: ${this.MathUtils.formatCurrency(wealths.reduce((a, b) => a + b, 0) / wealths.length)}`);
     }
 
+    /**
+     * Returns comprehensive market statistics and analytics.
+     * @returns {Object} Detailed market metrics
+     */
     getMarketStats() {
         const housedPeople = this.people.filter(p => p.house);
         const houselessPeople = this.people.filter(p => !p.house);
         const occupiedHouses = this.houses.filter(h => h.owner);
         
+        // Wealth analysis
+        const wealths = this.people.map(p => p.wealth).sort((a, b) => b - a);
+        const totalWealth = wealths.reduce((a, b) => a + b, 0);
+        const medianWealth = wealths.length > 0 ? wealths[Math.floor(wealths.length / 2)] : 0;
+        
+        // House value analysis
+        const houseValues = this.houses.map(h => h.calculateValue()).sort((a, b) => b - a);
+        const totalHouseValue = houseValues.reduce((a, b) => a + b, 0);
+        const medianHouseValue = houseValues.length > 0 ? houseValues[Math.floor(houseValues.length / 2)] : 0;
+        
+        // Market velocity (houses that changed hands recently)
+        const recentlyTraded = this.houses.filter(h => h.yearsSinceOwnership <= 1 && h.owner);
+        
+        // Wealth distribution metrics (Gini coefficient approximation)
+        let giniSum = 0;
+        for (let i = 0; i < wealths.length; i++) {
+            for (let j = 0; j < wealths.length; j++) {
+                giniSum += Math.abs(wealths[i] - wealths[j]);
+            }
+        }
+        const giniCoefficient = totalWealth > 0 ? giniSum / (2 * wealths.length * totalWealth) : 0;
+        
+        // Market concentration (what percentage of wealth is held by top 10%)
+        const top10PercentCount = Math.max(1, Math.floor(wealths.length * 0.1));
+        const top10PercentWealth = wealths.slice(0, top10PercentCount).reduce((a, b) => a + b, 0);
+        const wealthConcentration = totalWealth > 0 ? top10PercentWealth / totalWealth : 0;
+        
+        // Affordability ratio (average house value / average wealth)
+        const affordabilityRatio = totalWealth > 0 && wealths.length > 0 
+            ? (totalHouseValue / houseValues.length) / (totalWealth / wealths.length)
+            : 0;
+            
+        // Market efficiency (percentage of houses occupied)
+        const occupancyRate = this.houses.length > 0 ? occupiedHouses.length / this.houses.length : 0;
+        
         return {
+            // Basic metrics
             currentYear: this.currentYear,
             tickCount: this.tickCount,
             totalPeople: this.people.length,
@@ -234,8 +366,33 @@ class Market {
             totalHouses: this.houses.length,
             occupiedHouses: occupiedHouses.length,
             availableHouses: this.availableHouses.length,
-            averageWealth: this.people.reduce((sum, p) => sum + p.wealth, 0) / this.people.length,
-            averageHouseValue: this.houses.reduce((sum, h) => sum + h.calculateValue(), 0) / this.houses.length
+            
+            // Wealth metrics
+            averageWealth: wealths.length > 0 ? totalWealth / wealths.length : 0,
+            medianWealth: medianWealth,
+            wealthRange: wealths.length > 0 ? wealths[0] - wealths[wealths.length - 1] : 0,
+            giniCoefficient: giniCoefficient,
+            wealthConcentration: wealthConcentration,
+            
+            // House metrics
+            averageHouseValue: houseValues.length > 0 ? totalHouseValue / houseValues.length : 0,
+            medianHouseValue: medianHouseValue,
+            houseValueRange: houseValues.length > 0 ? houseValues[0] - houseValues[houseValues.length - 1] : 0,
+            
+            // Market dynamics
+            marketVelocity: recentlyTraded.length,
+            occupancyRate: occupancyRate,
+            affordabilityRatio: affordabilityRatio,
+            
+            // Auction metrics (if available)
+            lastAuctionResults: this.lastAuctionResults ? {
+                totalAuctioned: this.lastAuctionResults.length,
+                successfulSales: this.lastAuctionResults.filter(r => r.winner).length,
+                averagePrice: this.lastAuctionResults.length > 0 
+                    ? this.lastAuctionResults.filter(r => r.winner).reduce((sum, r) => sum + r.secondPrice, 0) / 
+                      Math.max(1, this.lastAuctionResults.filter(r => r.winner).length)
+                    : 0
+            } : null
         };
     }
 }

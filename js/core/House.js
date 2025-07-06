@@ -55,6 +55,19 @@ class House {
     }
 
     /**
+     * Applies depreciation to vacant houses.
+     * @param {number} depreciationRate - Yearly depreciation rate (e.g., 0.05 for 5%)
+     */
+    applyVacantDepreciation(depreciationRate) {
+        // Only apply depreciation if house is vacant/available
+        if (this.isAvailable() && depreciationRate > 0) {
+            this.intrinsicValue *= (1 - depreciationRate);
+            // Ensure intrinsic value doesn't go below a minimum threshold
+            this.intrinsicValue = Math.max(this.intrinsicValue, 1000); // Minimum $1,000
+        }
+    }
+
+    /**
      * Determines the visual state for rendering colors.
      * @returns {string} Color state: 'available', 'just-available', 'occupied', or 'just-occupied'
      */

@@ -1,8 +1,8 @@
 class Config {
     static DEFAULT_CONFIG = {
-        // Population
-        num_houses: 10,
-        num_people: 10,
+        // Population (Phase 3: scaled up for realistic markets)
+        num_houses: 100,
+        num_people: 100,
         
         // Wealth Distribution
         wealth_mean: 400000,  // Reduced to better match house prices
@@ -17,7 +17,8 @@ class Config {
         turnover_in: 2,
         turnover_out: 2,
         upgrade_threshold: 1.5,
-        n_auction_steps: 1, // Start with 1 for MVP
+        n_auction_steps: 3, // Multiple auction batches for more dynamic markets
+        vacant_depreciation: 0.05, // 5% value loss per year for unoccupied houses
         
         // Simulation
         simulation_speed: 1000,
