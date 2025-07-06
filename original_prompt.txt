@@ -1,0 +1,27 @@
+Let's build an interactive JavaScript simulation of a housing market!
+
+Here's the setup I'm imagining:
+* The market contains h houses and p people (settable)
+* Each person has a certain amount of wealth, randomly chosen, with initial wealth distributed according to a power law that should roughly match US wealth distributions. Mean wm and standard deviation wd are settable.
+* Each house has a certain initial price, representing the price that was most recently paid for it, randomly assigned via a normal distribution with mean hm and standard deviation hd (settable).
+* The core simulation process is that there are discrete time ticks (each representing a year), and after each tick a set of things happen, described below.
+* The system has a certain turnover; at every time tick, t_i new people enter the system (each with randomly chosen wealth), and t_o randomly chosen people sell their house and exit the system. Possibly we should also model people who want to move to a more desirable house? I'd love to hear your thoughts on this aspect.
+* When a house becomes open, everyone currently in the market bids on it (if they choose to do so), and it goes to the highest bidder. Bidding is open, and each person can bid as many times as they want during the same bidding process. People can simultaneously participate in auctions for multiple available houses, but anyone who is currently the highest bidder on one house is forbidden from placing bids on other houses.
+* Some simplifications: we'll ignore families and just imagine that each person represents a household.
+* During bidding, the desirability of each house is equal to the last price paid for it; every buyer wants the most desirable house they can afford to buy (I'm fairly uncertain about this aspect of the simulation -- I'd be interested to hear suggestions for other models of desirability and of how buyers choose homes. Maybe it would be better to set a value for each house that's independent of the price paid for it?).
+* The simulation will be a web page. The simulation should first and foremost take place as text printed in the console, so that you and I can follow a simulation without worrying about graphics. Secondarily there should be a graphic simulation which represents each of the steps that appear in the text. Let me know if that seems unclear, or if you'll have trouble following along with the JS console (if that's the case, we can consider other options).
+* The graphic simulation should show the houses on screen, with each house showing a) its value; b) its most recent selling price; c) the wealth of its owner; d) how long it's been occupied by the current owner. During bidding, we should be able to see the price as it goes up. 
+* I want to be able to run scenarios in which certain things happen. In particular, I want to be able to simulate one scenario in which a substantial number of people with high wealth decide to 'downsize' by selling their current house and buying a much lower-value house, to see how that affects the overall market.
+
+
+I'm not an economist or housing specialist! If you see problems with how I'm modeling the system, or ways in which it's fundamentally unrealistic (other than just its simplicity), please let me know and we'll discuss them!
+
+Code should be well architected, documented, and clearly written.
+
+I'd like us to work in the following three stages:
+1. Discussion, during which nothing should be written.
+2. Once I say we can move to the planning stage, create a written plan for the project and then we can discuss the plan. The plan should contain an explanation in your own words of the system being simulated, and a proposed architecture for the simulation, which will likely include classes for the different types of entities in the system.
+3. Once I say we can move on to implementation, start writing code. The first priority should be creating a minimum viable project version so we can play with the simulation and see how things are working, and then we'll improve it a step at a time until we've completed the plan. The plan should be created with that in mind, ie it should include a development timeline starting with the MVP and then a series of steps, each of which adds or improves a particular feature.
+
+OK, ultrathink about the problem and then let's discuss!
+

@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Housing Market Simulation</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Housing Market Simulation</h1>
+            <p>Interactive simulation of housing market dynamics</p>
+        </header>
+
+        <div class="controls-section">
+            <div id="controls">
+                <!-- Controls will be populated by JavaScript -->
+            </div>
+        </div>
+
+        <div class="main-content">
+            <div class="stats-panel">
+                <div id="stats">
+                    <h3>Market Statistics</h3>
+                    <div>Initialize simulation to see stats</div>
+                </div>
+            </div>
+
+            <div class="console-panel">
+                <h3>Console Output</h3>
+                <div id="console-output">
+                    <div>Open browser console (F12) to see detailed simulation output</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="visualization-section">
+            <h3>Market Visualization</h3>
+            <div id="visualization">
+                <canvas id="market-canvas" width="800" height="600"></canvas>
+            </div>
+        </div>
+
+        <div class="info-section">
+            <h3>Instructions</h3>
+            <ul>
+                <li><strong>Start:</strong> Begin running the simulation automatically</li>
+                <li><strong>Pause:</strong> Pause the automatic simulation</li>
+                <li><strong>Step:</strong> Advance the simulation by one year</li>
+                <li><strong>Stop:</strong> Stop the simulation</li>
+                <li><strong>Reset:</strong> Reset the simulation to initial conditions</li>
+                <li><strong>Speed:</strong> Adjust how fast the simulation runs</li>
+            </ul>
+            <p>Watch the console output for detailed information about market dynamics, auctions, and individual transactions.</p>
+        </div>
+    </div>
+
+    <!-- Include utility scripts first -->
+    <script src="js/utils/MathUtils.js"></script>
+    <script src="js/utils/Config.js"></script>
+    
+    <!-- Include core classes -->
+    <script src="js/core/Person.js"></script>
+    <script src="js/core/House.js"></script>
+    <script src="js/core/Auction.js"></script>
+    <script src="js/core/Market.js"></script>
+    
+    <!-- Include main simulation -->
+    <script src="js/main.js"></script>
+</body>
+</html>
