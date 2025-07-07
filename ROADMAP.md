@@ -48,6 +48,8 @@ getBidAmount(house) {
 
 ## Other Future Considerations
 
+### Consider having people give up if they go to long without finding a house
+
 ### Market Maker/Bank System
 - Add institutional buyers that participate in auctions
 - Could help stabilize markets or add different dynamics
