@@ -95,13 +95,24 @@ class Auction {
     executeTransactions() {
         console.log('\n=== Executing Transactions ===');
         
+        // Track houses that become available when people move
+        const housesFromUpgrades = [];
+        
         for (const result of this.results) {
             if (result.winner) {
+                // Check if winner already owns a house (will be sold)
+                if (result.winner.house) {
+                    housesFromUpgrades.push(result.winner.house);
+                }
+                
                 // Winner takes ownership
                 result.winner.buyHouse(result.house, result.secondPrice);
                 console.log(`  ${result.winner.id} bought ${result.house.id} for ${this.MathUtils.formatCurrency(result.secondPrice)}`);
             }
         }
+        
+        // Store houses that became available for the market to reclaim
+        this.housesFromUpgrades = housesFromUpgrades;
         
         return this.results;
     }
@@ -112,6 +123,14 @@ class Auction {
 
     getFailedSales() {
         return this.results.filter(result => result.winner === null);
+    }
+
+    /**
+     * Gets houses that became available when people upgraded (sold their old house).
+     * @returns {House[]} Array of houses that became available from upgrades
+     */
+    getHousesFromUpgrades() {
+        return this.housesFromUpgrades || [];
     }
 
     generateReport() {

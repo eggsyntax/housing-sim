@@ -5,7 +5,7 @@ class Config {
         num_people: 100,
         
         // Wealth Distribution
-        wealth_mean: 400000,  // Reduced to better match house prices
+        wealth_mean: 300000,  // Reduced to better match house prices
         wealth_std: 200000,   // Reduced for better affordability
         
         // Housing

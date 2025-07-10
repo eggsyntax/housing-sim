@@ -295,12 +295,19 @@ class Market {
     }
 
     /**
-     * Updates the available houses list after an auction by removing sold houses.
+     * Updates the available houses list after an auction by removing sold houses and adding upgrade houses.
      * @param {Auction} auction - The auction that was conducted
      */
     updateAvailableHousesAfterAuction(auction) {
         const soldHouses = auction.getSuccessfulSales().map(result => result.house);
         this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
+        
+        // Add houses that became available from people upgrading (selling their old house)
+        const housesFromUpgrades = auction.getHousesFromUpgrades();
+        if (housesFromUpgrades.length > 0) {
+            this.availableHouses.push(...housesFromUpgrades);
+            console.log(`Added ${housesFromUpgrades.length} house${housesFromUpgrades.length > 1 ? 's' : ''} from upgrades back to available pool`);
+        }
     }
 
     /**
