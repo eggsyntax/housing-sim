@@ -11,6 +11,11 @@
         <header>
             <h1>Housing Market Simulation</h1>
             <p>Interactive simulation of housing market dynamics</p>
+            <div class="header-controls">
+                <button id="settingsBtn" class="settings-btn" title="Settings">
+                    ⚙️
+                </button>
+            </div>
         </header>
 
         <div class="controls-section">
@@ -55,6 +60,25 @@
                 <li><strong>Speed:</strong> Adjust how fast the simulation runs</li>
             </ul>
             <p>Watch the console output for detailed information about market dynamics, auctions, and individual transactions.</p>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Simulation Settings</h2>
+                <span id="closeSettings" class="close">&times;</span>
+            </div>
+            <div class="modal-body">
+                <div id="settingsForm">
+                    <!-- Settings will be populated by JavaScript -->
+                </div>
+                <div class="modal-footer">
+                    <button id="resetToDefaults" class="btn btn-secondary">Reset to Defaults</button>
+                    <button id="saveSettings" class="btn btn-primary">Save & Apply</button>
+                </div>
+            </div>
         </div>
     </div>
 

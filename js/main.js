@@ -291,3 +291,240 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // Make simulation accessible globally for debugging
 window.simulation = simulation;
+
+/**
+ * Settings Screen Management
+ */
+class SettingsManager {
+    constructor(simulation) {
+        this.simulation = simulation;
+        this.modal = document.getElementById('settingsModal');
+        this.settingsForm = document.getElementById('settingsForm');
+        
+        this.setupEventListeners();
+    }
+
+    setupEventListeners() {
+        // Settings button
+        document.getElementById('settingsBtn').addEventListener('click', () => {
+            this.openSettings();
+        });
+
+        // Close settings
+        document.getElementById('closeSettings').addEventListener('click', () => {
+            this.closeSettings();
+        });
+
+        // Close on outside click
+        this.modal.addEventListener('click', (e) => {
+            if (e.target === this.modal) {
+                this.closeSettings();
+            }
+        });
+
+        // Reset to defaults
+        document.getElementById('resetToDefaults').addEventListener('click', () => {
+            this.resetToDefaults();
+        });
+
+        // Save settings
+        document.getElementById('saveSettings').addEventListener('click', () => {
+            this.saveSettings();
+        });
+
+        // Close on Escape key
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && this.modal.style.display === 'block') {
+                this.closeSettings();
+            }
+        });
+    }
+
+    openSettings() {
+        this.renderSettingsForm();
+        this.modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+    }
+
+    closeSettings() {
+        this.modal.style.display = 'none';
+        document.body.style.overflow = 'auto';
+    }
+
+    renderSettingsForm() {
+        const settings = this.simulation.config.getConfigurableSettings();
+        const categories = this.groupSettingsByCategory(settings);
+        
+        this.settingsForm.innerHTML = '';
+        
+        Object.entries(categories).forEach(([categoryName, categorySettings]) => {
+            const categoryDiv = document.createElement('div');
+            categoryDiv.className = 'settings-category';
+            
+            const categoryTitle = document.createElement('h3');
+            categoryTitle.textContent = categoryName;
+            categoryDiv.appendChild(categoryTitle);
+            
+            Object.entries(categorySettings).forEach(([key, setting]) => {
+                const settingItem = this.createSettingItem(key, setting);
+                categoryDiv.appendChild(settingItem);
+            });
+            
+            this.settingsForm.appendChild(categoryDiv);
+        });
+    }
+
+    groupSettingsByCategory(settings) {
+        const categories = {};
+        
+        Object.entries(settings).forEach(([key, setting]) => {
+            const category = setting.category || 'Other';
+            if (!categories[category]) {
+                categories[category] = {};
+            }
+            categories[category][key] = setting;
+        });
+        
+        return categories;
+    }
+
+    createSettingItem(key, setting) {
+        const item = document.createElement('div');
+        item.className = 'setting-item';
+        
+        const info = document.createElement('div');
+        info.className = 'setting-info';
+        
+        const name = document.createElement('div');
+        name.className = 'setting-name';
+        name.textContent = setting.name;
+        
+        const description = document.createElement('div');
+        description.className = 'setting-description';
+        description.textContent = setting.description;
+        
+        info.appendChild(name);
+        info.appendChild(description);
+        
+        const inputContainer = document.createElement('div');
+        inputContainer.className = 'setting-input';
+        
+        const input = document.createElement('input');
+        input.type = setting.type;
+        input.id = `setting-${key}`;
+        input.value = setting.value;
+        input.min = setting.min;
+        input.max = setting.max;
+        input.step = setting.step;
+        
+        inputContainer.appendChild(input);
+        
+        // Add unit label if applicable
+        if (setting.format) {
+            const unit = document.createElement('div');
+            unit.className = 'setting-unit';
+            unit.textContent = this.getUnitLabel(setting.format, setting.value);
+            inputContainer.appendChild(unit);
+        }
+        
+        item.appendChild(info);
+        item.appendChild(inputContainer);
+        
+        return item;
+    }
+
+    getUnitLabel(format, value) {
+        switch (format) {
+            case 'currency':
+                return `$${value.toLocaleString()}`;
+            case 'percent':
+                return `${(value * 100).toFixed(1)}%`;
+            case 'time':
+                return `${value}ms`;
+            default:
+                return '';
+        }
+    }
+
+    collectFormData() {
+        const data = {};
+        const settings = this.simulation.config.getConfigurableSettings();
+        
+        Object.keys(settings).forEach(key => {
+            const input = document.getElementById(`setting-${key}`);
+            if (input) {
+                let value = parseFloat(input.value);
+                
+                // Validate against constraints
+                const setting = settings[key];
+                if (value < setting.min) value = setting.min;
+                if (value > setting.max) value = setting.max;
+                
+                data[key] = value;
+            }
+        });
+        
+        return data;
+    }
+
+    resetToDefaults() {
+        if (confirm('Reset all settings to default values? This will also reset the simulation.')) {
+            this.simulation.config.resetToDefaults();
+            this.renderSettingsForm();
+            this.simulation.reset();
+            this.closeSettings();
+        }
+    }
+
+    saveSettings() {
+        const newSettings = this.collectFormData();
+        
+        try {
+            this.simulation.config.updateSettings(newSettings);
+            this.simulation.reset(); // Reset simulation with new settings
+            this.closeSettings();
+            
+            // Show brief confirmation
+            this.showNotification('Settings saved and simulation reset!');
+        } catch (error) {
+            alert('Error saving settings: ' + error.message);
+        }
+    }
+
+    showNotification(message) {
+        // Create temporary notification
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #27ae60;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 5px;
+            z-index: 1001;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            animation: slideInRight 0.3s ease;
+        `;
+        notification.textContent = message;
+        
+        document.body.appendChild(notification);
+        
+        // Remove after 3 seconds
+        setTimeout(() => {
+            notification.style.animation = 'slideOutRight 0.3s ease';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.parentNode.removeChild(notification);
+                }
+            }, 300);
+        }, 3000);
+    }
+}
+
+// Initialize settings manager when page loads
+document.addEventListener('DOMContentLoaded', () => {
+    if (simulation) {
+        window.settingsManager = new SettingsManager(simulation);
+    }
+});
