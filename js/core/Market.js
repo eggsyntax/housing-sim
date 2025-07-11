@@ -181,6 +181,8 @@ class Market {
         // Select random people to exit from ALL people, not just housed ones
         const exitingPeople = this.MathUtils.selectRandomElements(this.people, turnoverOut);
         
+        const housesFromExits = [];
+        
         if (exitingPeople.length > 0) {
             console.log(`\n--- People Exiting Market ---`);
             exitingPeople.forEach(person => {
@@ -188,7 +190,7 @@ class Market {
                     console.log(`${person.id} exits, selling ${person.house.id}`);
                     const house = person.sellHouse();
                     if (house) {
-                        this.availableHouses.push(house);
+                        housesFromExits.push(house);
                     }
                 } else {
                     console.log(`${person.id} exits (was unhoused)`);
@@ -198,6 +200,9 @@ class Market {
             // Remove exiting people from market
             this.people = this.people.filter(person => !exitingPeople.includes(person));
         }
+        
+        // Store houses from exits to be added to available pool after auctions
+        this.housesFromExits = housesFromExits;
     }
 
     processEntries() {
@@ -234,9 +239,25 @@ class Market {
         const auctionSummary = this.initializeAuctionSummary();
         const housesPerBatch = Math.max(1, Math.ceil(this.availableHouses.length / nAuctionSteps));
         
+        // Collect all houses from upgrades across all batches
+        const allHousesFromUpgrades = [];
+        
         for (let batchNum = 0; batchNum < nAuctionSteps && this.availableHouses.length > 0; batchNum++) {
-            this.conductSingleAuctionBatch(batchNum + 1, nAuctionSteps, housesPerBatch, auctionSummary);
+            const batchUpgradeHouses = this.conductSingleAuctionBatch(batchNum + 1, nAuctionSteps, housesPerBatch, auctionSummary);
+            allHousesFromUpgrades.push(...batchUpgradeHouses);
         }
+        
+        // Add all upgrade houses and exit houses back to available pool for next turn
+        const allHousesForNextTurn = [...allHousesFromUpgrades, ...(this.housesFromExits || [])];
+        if (allHousesForNextTurn.length > 0) {
+            this.availableHouses.push(...allHousesForNextTurn);
+            const upgradeCount = allHousesFromUpgrades.length;
+            const exitCount = (this.housesFromExits || []).length;
+            console.log(`Added ${allHousesForNextTurn.length} house${allHousesForNextTurn.length > 1 ? 's' : ''} to next turn's available pool (${upgradeCount} from upgrades, ${exitCount} from exits)`);
+        }
+        
+        // Clear the exit houses for next turn
+        this.housesFromExits = [];
         
         this.finalizeAuctions(auctionSummary);
     }
@@ -263,12 +284,13 @@ class Market {
      * @param {number} totalBatches - Total number of batches
      * @param {number} housesPerBatch - Number of houses per batch
      * @param {Object} auctionSummary - Summary object to accumulate results
+     * @returns {House[]} Houses that became available from upgrades in this batch
      */
     conductSingleAuctionBatch(batchNumber, totalBatches, housesPerBatch, auctionSummary) {
         console.log(`\n=== Auction Batch ${batchNumber}/${totalBatches} ===`);
         
         const batchHouses = this.availableHouses.slice(0, housesPerBatch);
-        if (batchHouses.length === 0) return;
+        if (batchHouses.length === 0) return [];
         
         console.log(`Auctioning ${batchHouses.length} house${batchHouses.length > 1 ? 's' : ''}`);
         
@@ -282,8 +304,8 @@ class Market {
         auction.executeTransactions();
         auctionSummary.allResults.push(...results);
         
-        // Update available houses and accumulate statistics
-        this.updateAvailableHousesAfterAuction(auction);
+        // Update available houses (remove sold houses only, don't add upgrade houses yet)
+        this.removeSoldHousesFromAvailable(auction);
         this.accumulateBatchStatistics(auction, auctionSummary.totalReport);
         
         console.log(`Batch ${batchNumber} results: ${auction.generateReport().successfulSales}/${auction.generateReport().totalHouses} houses sold`);
@@ -292,11 +314,24 @@ class Market {
         if (batchNumber < totalBatches && this.availableHouses.length > 0) {
             console.log(`--- Brief delay before next batch ---`);
         }
+        
+        // Return houses from upgrades for collection (don't add to available pool yet)
+        return auction.getHousesFromUpgrades();
+    }
+
+    /**
+     * Removes sold houses from the available houses list.
+     * @param {Auction} auction - The auction that was conducted
+     */
+    removeSoldHousesFromAvailable(auction) {
+        const soldHouses = auction.getSuccessfulSales().map(result => result.house);
+        this.availableHouses = this.availableHouses.filter(house => !soldHouses.includes(house));
     }
 
     /**
      * Updates the available houses list after an auction by removing sold houses and adding upgrade houses.
      * @param {Auction} auction - The auction that was conducted
+     * @deprecated Use removeSoldHousesFromAvailable instead to avoid same-turn re-auction
      */
     updateAvailableHousesAfterAuction(auction) {
         const soldHouses = auction.getSuccessfulSales().map(result => result.house);
